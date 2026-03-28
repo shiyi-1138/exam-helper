@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>中高考简化答题助手</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0c0e15;
+  --surface: #12151f;
+  --surface2: #181c28;
+  --surface3: #1e2333;
+  --border: #252b3a;
+  --border2: #2e3548;
+  --gold: #e8c97d;
+  --gold-dim: rgba(232,201,125,0.12);
+  --blue: #7db8e8;
+  --blue-dim: rgba(125,184,232,0.12);
+  --green: #7de8b8;
+  --green-dim: rgba(125,232,184,0.12);
+  --red: #e87d7d;
+  --red-dim: rgba(232,125,125,0.12);
+  --text: #dde1ee;
+  --muted: #6a7390;
+  --muted2: #4a5268;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Noto Sans SC', sans-serif;
+  min-height: 100vh; overflow-x: hidden;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 10%, rgba(232,201,125,0.04) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 60% at 85% 85%, rgba(125,184,232,0.04) 0%, transparent 55%);
+  pointer-events: none; z-index: 0;
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none; z-index: 0;
+}
+.page { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 56px 20px 100px; }
+
+/* Header */
+header { text-align: center; margin-bottom: 52px; animation: fadeDown 0.7s ease both; }
+.badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  letter-spacing: 0.18em; color: var(--gold);
+  border: 1px solid rgba(232,201,125,0.25);
+  padding: 5px 16px; border-radius: 2px;
+  background: var(--gold-dim); margin-bottom: 22px;
+}
+.badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: pulse 2s ease-in-out infinite; }
+h1 { font-family: 'Noto Serif SC', serif; font-size: clamp(26px, 4.5vw, 42px); font-weight: 700; line-height: 1.25; margin-bottom: 14px; }
+.sub { font-size: 13px; color: var(--muted); letter-spacing: 0.05em; line-height: 1.9; }
+
+/* Card */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 26px 28px; margin-bottom: 18px; }
+.input-card { animation: fadeUp 0.7s 0.1s ease both; }
+
+.field-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.2em; color: var(--muted); margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.field-label::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); display: inline-block; }
+
+textarea {
+  width: 100%; min-height: 120px; resize: vertical;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text);
+  font-family: 'Noto Sans SC', sans-serif; font-size: 14.5px;
+  line-height: 1.75; padding: 16px 18px; outline: none; transition: border-color 0.2s;
+}
+textarea:focus { border-color: rgba(232,201,125,0.35); }
+textarea::placeholder { color: var(--muted2); }
+
+.tags-row { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 14px; align-items: center; }
+.row-label { font-size: 12px; color: var(--muted); }
+.tag {
+  font-size: 12px; padding: 5px 13px; border-radius: 20px;
+  border: 1px solid var(--border2); background: transparent;
+  color: var(--muted); cursor: pointer; transition: all 0.18s;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+.tag:hover { border-color: var(--gold); color: var(--gold); }
+.tag.active { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+
+.submit-btn {
+  width: 100%; margin-top: 20px; padding: 15px;
+  background: var(--gold); color: #0c0e15;
+  font-family: 'Noto Sans SC', sans-serif; font-weight: 600;
+  font-size: 15px; border: none; border-radius: 8px;
+  cursor: pointer; letter-spacing: 0.05em;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.18s;
+}
+.submit-btn:hover { background: #f0d898; transform: translateY(-1px); }
+.submit-btn:active { transform: translateY(0); }
+.submit-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+/* Section header */
+.sec-hd {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.22em; color: var(--muted); margin-bottom: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.sec-hd::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* Method cards */
+.method-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 22px 24px; position: relative;
+  overflow: hidden; margin-bottom: 14px; transition: border-color 0.2s;
+}
+.method-card:hover { border-color: var(--border2); }
+.method-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; }
+.method-card.m1::before { background: var(--green); }
+.method-card.m2::before { background: var(--gold); }
+.method-card.m3::before { background: var(--red); }
+
+.method-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.method-num { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; }
+.m1 .method-num { color: var(--green); }
+.m2 .method-num { color: var(--gold); }
+.m3 .method-num { color: var(--red); }
+
+.diff-tag { font-size: 11px; padding: 2px 10px; border-radius: 12px; font-family: 'Noto Sans SC', sans-serif; }
+.m1 .diff-tag { background: var(--green-dim); color: var(--green); }
+.m2 .diff-tag { background: var(--gold-dim); color: var(--gold); }
+.m3 .diff-tag { background: var(--red-dim); color: var(--red); }
+
+.method-title { font-family: 'Noto Serif SC', serif; font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+.method-rec { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+.method-section { margin-top: 14px; }
+.method-section-title { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; letter-spacing: 0.05em; }
+.method-body { font-size: 14px; color: #a8b2c8; line-height: 1.85; white-space: pre-wrap; }
+
+/* Steps */
+.step { display: flex; gap: 14px; margin-bottom: 12px; align-items: flex-start; }
+.step-num {
+  min-width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
+  flex-shrink: 0; margin-top: 2px;
+}
+.m1 .step-num { background: var(--green-dim); color: var(--green); border: 1px solid rgba(125,232,184,0.3); }
+.m2 .step-num { background: var(--gold-dim); color: var(--gold); border: 1px solid rgba(232,201,125,0.3); }
+.m3 .step-num { background: var(--red-dim); color: var(--red); border: 1px solid rgba(232,125,125,0.3); }
+.gold-num { background: var(--gold-dim) !important; color: var(--gold) !important; border: 1px solid rgba(232,201,125,0.3) !important; }
+
+.step-content { font-size: 14px; color: #a8b2c8; line-height: 1.8; }
+.step-note { font-size: 12px; color: var(--muted); margin-top: 4px; font-style: italic; }
+
+/* Info grid */
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+@media (max-width: 560px) { .info-grid { grid-template-columns: 1fr; } }
+.info-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+.info-icon { font-size: 16px; margin-bottom: 6px; }
+.info-lbl { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: var(--muted); margin-bottom: 8px; }
+.info-val { font-size: 13.5px; line-height: 1.7; color: var(--text); }
+.info-val .hl { color: var(--blue); font-weight: 500; }
+.info-val .tag2 { display: inline-block; font-size: 11px; background: var(--blue-dim); color: var(--blue); border-radius: 10px; padding: 2px 9px; margin: 2px 3px 2px 0; }
+
+/* Exam */
+.exam-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 22px 24px; margin-bottom: 18px; }
+.exam-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.exam-title { font-size: 14px; font-weight: 500; }
+.exam-pct { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 600; color: var(--gold); }
+.bar-track { background: var(--surface2); border-radius: 4px; height: 8px; overflow: hidden; margin-bottom: 10px; }
+.bar-fill { height: 100%; border-radius: 4px; width: 0%; background: linear-gradient(90deg, var(--blue), var(--gold)); transition: width 1.1s cubic-bezier(0.4,0,0.2,1); }
+.exam-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.exam-chip { font-size: 12px; padding: 3px 11px; border-radius: 12px; background: var(--surface2); border: 1px solid var(--border2); color: var(--muted); }
+.exam-chip .val { color: var(--gold); font-weight: 500; }
+.exam-note { font-size: 13px; color: var(--muted); line-height: 1.75; }
+
+/* Example */
+.example-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px 26px; margin-bottom: 18px; }
+.example-q { background: var(--surface2); border-left: 3px solid var(--gold); border-radius: 6px; padding: 14px 16px; font-size: 14px; line-height: 1.75; margin-bottom: 18px; }
+.clue-item { display: flex; gap: 10px; margin-bottom: 8px; font-size: 13.5px; color: #a8b2c8; line-height: 1.7; }
+.clue-icon { color: var(--gold); flex-shrink: 0; margin-top: 2px; }
+.answer-box { background: var(--green-dim); border: 1px solid rgba(125,232,184,0.2); border-radius: 8px; padding: 14px 18px; margin-top: 16px; font-family: 'JetBrains Mono', monospace; font-size: 16px; text-align: center; color: var(--green); font-weight: 600; letter-spacing: 0.1em; }
+
+/* Caution */
+.caution-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-bottom: 18px; }
+.caution-item { display: flex; gap: 10px; margin-bottom: 10px; font-size: 13.5px; color: #a8b2c8; line-height: 1.75; }
+.caution-item:last-child { margin-bottom: 0; }
+.caution-dot { color: var(--red); flex-shrink: 0; }
+
+/* Error */
+.error { background: var(--red-dim); border: 1px solid rgba(232,125,125,0.25); border-radius: 8px; padding: 13px 18px; font-size: 14px; color: var(--red); margin-top: 12px; display: none; }
+
+/* Input mode tabs */
+.mode-tabs { display: flex; gap: 0; margin-bottom: 18px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.mode-tab {
+  flex: 1; padding: 10px; text-align: center; cursor: pointer;
+  font-size: 13px; font-family: 'Noto Sans SC', sans-serif;
+  color: var(--muted); background: var(--surface2);
+  border: none; transition: all 0.18s; display: flex;
+  align-items: center; justify-content: center; gap: 6px;
+}
+.mode-tab:first-child { border-right: 1px solid var(--border); }
+.mode-tab.active { background: var(--gold-dim); color: var(--gold); }
+.mode-tab:hover:not(.active) { color: var(--text); background: var(--surface3); }
+
+/* Photo upload area */
+#photo-panel { display: none; }
+.upload-zone {
+  border: 2px dashed var(--border2); border-radius: 10px;
+  padding: 32px 20px; text-align: center; cursor: pointer;
+  transition: all 0.2s; position: relative; background: var(--surface2);
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--gold); background: var(--gold-dim);
+}
+.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-icon { font-size: 36px; margin-bottom: 10px; }
+.upload-main { font-size: 14px; color: var(--text); margin-bottom: 6px; font-weight: 500; }
+.upload-sub { font-size: 12px; color: var(--muted); }
+
+/* Preview */
+.img-preview-wrap { position: relative; display: inline-block; margin-top: 14px; }
+.img-preview { max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid var(--border2); display: block; }
+.img-remove {
+  position: absolute; top: -8px; right: -8px;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--red); color: white; border: none;
+  cursor: pointer; font-size: 14px; line-height: 24px;
+  text-align: center; display: flex; align-items: center; justify-content: center;
+}
+.img-remove:hover { background: #ff6b6b; }
+.ocr-status { font-size: 12px; color: var(--muted); margin-top: 8px; text-align: center; }
+.ocr-status.ok { color: var(--green); }
+
+/* Spinner */
+.spinner { width: 16px; height: 16px; border: 2px solid rgba(0,0,0,0.15); border-top-color: #0c0e15; border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+@keyframes fadeDown { from { opacity: 0; transform: translateY(-18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeUp   { from { opacity: 0; transform: translateY(20px);  } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin     { to { transform: rotate(360deg); } }
+@keyframes pulse    { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+footer { text-align: center; margin-top: 64px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted2); letter-spacing: 0.12em; }
+#result-area { display: none; animation: fadeUp 0.5s ease both; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <div class="badge"><div class="badge-dot"></div>AI · 中高考智能助手</div>
+  <h1>中高考<span style="color:var(--gold)">简化</span>答题助手</h1>
+  <p class="sub">
+    三种方法 · 由易到难 &nbsp;|&nbsp; 知识点定位 · 教材出处<br>
+    考频分析 · 分值权重 &nbsp;|&nbsp; 典型例题 · 易错警示
+  </p>
+</header>
+
+<div class="card input-card">
+  <!-- Mode tabs -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" id="tab-text" onclick="switchMode('text')">
+      ✏️ 手动输入题目
+    </button>
+    <button class="mode-tab" id="tab-photo" onclick="switchMode('photo')">
+      📷 拍题 / 上传图片
+    </button>
+  </div>
+
+  <!-- Text panel -->
+  <div id="text-panel">
+    <div class="field-label">输入题目或考点问题</div>
+    <textarea id="q" placeholder="请输入任意题目，例如：&#10;&#10;若 1/m + 1/n = 2，求 (5m+5n-2mn)/(-m-n) 的值&#10;&#10;或：请讲解牛顿第二定律的应考技巧。"></textarea>
+  </div>
+
+  <!-- Photo panel -->
+  <div id="photo-panel">
+    <div class="field-label">拍摄或上传题目图片</div>
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" id="img-input" accept="image/*" capture="environment" onchange="handleImage(this)"/>
+      <div class="upload-icon">📸</div>
+      <div class="upload-main">点击拍照 或 选择图片</div>
+      <div class="upload-sub">支持 JPG / PNG · 手机可直接调用相机</div>
+    </div>
+    <div id="preview-wrap" style="display:none; text-align:center; margin-top:12px;">
+      <div class="img-preview-wrap">
+        <img id="img-preview" class="img-preview" src="" alt="题目图片"/>
+        <button class="img-remove" onclick="clearImage()" title="删除">✕</button>
+      </div>
+      <div class="ocr-status" id="ocr-status">图片已选择，将在分析时自动识别题目</div>
+    </div>
+    <div class="field-label" style="margin-top:16px;">补充说明（可选）</div>
+    <textarea id="q-photo" placeholder="如有补充，可在此输入，例如：第(2)问怎么做？" style="min-height:60px;"></textarea>
+  </div>
+
+  <div class="tags-row">
+    <span class="row-label">科目：</span>
+    <button class="tag active" data-s="自动识别">🔍 自动识别</button>
+    <button class="tag" data-s="数学">📐 数学</button>
+    <button class="tag" data-s="物理">⚡ 物理</button>
+    <button class="tag" data-s="化学">🧪 化学</button>
+    <button class="tag" data-s="生物">🧬 生物</button>
+    <button class="tag" data-s="语文">📖 语文</button>
+    <button class="tag" data-s="英语">🌐 英语</button>
+  </div>
+
+  <div class="tags-row">
+    <span class="row-label">学段：</span>
+    <button class="tag active" data-g="自动">全部</button>
+    <button class="tag" data-g="初中">初中（中考）</button>
+    <button class="tag" data-g="高中">高中（高考）</button>
+  </div>
+
+  <button class="submit-btn" id="btn" onclick="run()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    开始分析（Ctrl + Enter）
+  </button>
+  <div class="error" id="err"></div>
+</div>
+
+<div id="result-area">
+
+  <div class="sec-hd">三种解题方法（由易到难）</div>
+
+  <div class="method-card m1">
+    <div class="method-top">
+      <div class="method-num">METHOD 01</div>
+      <div class="diff-tag">⚡ 最简便 · 优先使用</div>
+    </div>
+    <div class="method-title" id="t1">—</div>
+    <div class="method-rec" id="r1"></div>
+    <div class="method-section"><div class="method-section-title">▸ 详细原理</div><div class="method-body" id="p1"></div></div>
+    <div class="method-section"><div class="method-section-title">▸ 适用场景</div><div class="method-body" id="s1"></div></div>
+    <div class="method-section"><div class="method-section-title">▸ 解题步骤</div><div id="steps1"></div></div>
+  </div>
+
+  <div class="method-card m2">
+    <div class="method-top">
+      <div class="method-num">METHOD 02</div>
+      <div class="diff-tag">📘 常规方法</div>
+    </div>
+    <div class="method-title" id="t2">—</div>
+    <div class="method-rec" id="r2"></div>
+    <div class="method-section"><div class="method-section-title">▸ 详细原理</div><div class="method-body" id="p2"></div></div>
+    <div class="method-section"><div class="method-section-title">▸ 适用场景</div><div class="method-body" id="s2"></div></div>
+    <div class="method-section"><div class="method-section-title">▸ 解题步骤</div><div id="steps2"></div></div>
+  </div>
+
+  <div class="method-card m3">
+    <div class="method-top">
+      <div class="method-num">METHOD 03</div>
+      <div class="diff-tag">🎓 进阶规范</div>
+    </div>
+    <div class="method-title" id="t3">—</div>
+    <div class="method-rec" id="r3"></div>
+    <div class="method-section"><div class="method-section-title">▸ 详细原理</div><div class="method-body" id="p3"></div></div>
+    <div class="method-section"><div class="method-section-title">▸ 适用场景</div><div class="method-body" id="s3"></div></div>
+    <div class="method-section"><div class="method-section-title">▸ 解题步骤</div><div id="steps3"></div></div>
+  </div>
+
+  <div class="sec-hd">关联知识点</div>
+  <div class="info-grid">
+    <div class="info-card"><div class="info-icon">📚</div><div class="info-lbl">学习阶段 · 教材版本</div><div class="info-val" id="k-grade"></div></div>
+    <div class="info-card"><div class="info-icon">📖</div><div class="info-lbl">知识点出处（章节）</div><div class="info-val" id="k-chapter"></div></div>
+    <div class="info-card"><div class="info-icon">🎯</div><div class="info-lbl">核心知识点</div><div class="info-val" id="k-points"></div></div>
+    <div class="info-card"><div class="info-icon">🔗</div><div class="info-lbl">相关知识点</div><div class="info-val" id="k-related"></div></div>
+  </div>
+
+  <div class="sec-hd">中高考考点分析</div>
+  <div class="exam-card">
+    <div class="exam-top">
+      <div class="exam-title" id="e-title">该知识点考试权重</div>
+      <div class="exam-pct" id="e-pct">—</div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="bar"></div></div>
+    <div class="exam-meta" id="e-meta"></div>
+    <div class="exam-note" id="e-note"></div>
+  </div>
+
+  <div class="sec-hd">典型例题详解（以最简便方法为例）</div>
+  <div class="example-card">
+    <div class="method-section-title" style="margin-bottom:10px;">📝 题目</div>
+    <div class="example-q" id="ex-q"></div>
+    <div class="method-section-title" style="margin-bottom:10px;">🔍 解题切入点</div>
+    <div id="ex-clues"></div>
+    <div class="method-section-title" style="margin-bottom:10px; margin-top:16px;">📋 详细解题步骤</div>
+    <div id="ex-steps"></div>
+    <div class="answer-box" id="ex-ans"></div>
+  </div>
+
+  <div class="sec-hd">易错警示</div>
+  <div class="caution-card"><div id="cautions"></div></div>
+
+</div>
+
+<footer>中高考简化答题助手 · 人教版 / 苏教版 · POWERED BY CLAUDE AI</footer>
+</div>
+
+<script>
+// ── Mode switching ──
+let currentMode = 'text';
+let imageBase64 = null;
+let imageMime = 'image/jpeg';
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('text-panel').style.display = mode === 'text' ? '' : 'none';
+  document.getElementById('photo-panel').style.display = mode === 'photo' ? '' : 'none';
+  document.getElementById('tab-text').classList.toggle('active', mode === 'text');
+  document.getElementById('tab-photo').classList.toggle('active', mode === 'photo');
+  showErr('');
+}
+
+// ── Drag & drop ──
+const zone = document.getElementById('upload-zone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadImageFile(file);
+});
+
+function handleImage(input) {
+  const file = input.files[0];
+  if (file) loadImageFile(file);
+}
+
+function loadImageFile(file) {
+  imageMime = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = e => {
+    imageBase64 = e.target.result.split(',')[1];
+    document.getElementById('img-preview').src = e.target.result;
+    document.getElementById('preview-wrap').style.display = '';
+    document.getElementById('upload-zone').style.display = 'none';
+    document.getElementById('ocr-status').textContent = '✅ 图片已加载，点击「开始分析」即可识别';
+    document.getElementById('ocr-status').className = 'ocr-status ok';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage() {
+  imageBase64 = null;
+  document.getElementById('img-preview').src = '';
+  document.getElementById('preview-wrap').style.display = 'none';
+  document.getElementById('upload-zone').style.display = '';
+  document.getElementById('img-input').value = '';
+  document.getElementById('ocr-status').textContent = '';
+}
+
+// ── Subject / grade tags ──
+document.querySelectorAll('[data-s]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-s]').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+}));
+document.querySelectorAll('[data-g]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-g]').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+}));
+
+function getSubject() { return document.querySelector('[data-s].active')?.dataset.s || '自动识别'; }
+function getGrade()   { return document.querySelector('[data-g].active')?.dataset.g || '自动'; }
+
+const SYSTEM = `你是"中高考简化答题助手"，专注于中高考应考技巧讲解。你的核心规则：
+1. 必须提供三种解题方法，按简便程度排序：方法1是最简便的（特殊值法/整体代换/数形结合等速解技巧），方法2是常规方法，方法3是最规范完整的方法（适合解答题）
+2. 典型例题详解必须以方法1（最简便）为示范
+3. 知识点定位精确到人教版/苏教版年级、学期、章节
+4. 考频分析给出中考或高考的真实考察情况
+5. 如果用户提供的是图片，请先识别图片中的完整题目内容，再进行解析
+
+严格只输出以下JSON，不要包含任何其他文字：
+
+{
+  "method1": {
+    "title": "方法名称（如：特殊值法）",
+    "rec": "一句话推荐理由",
+    "principle": "详细原理说明",
+    "scene": "适用场景说明",
+    "steps": ["步骤1的完整描述", "步骤2的完整描述", "步骤3的完整描述"]
+  },
+  "method2": {
+    "title": "方法名称（如：整体代换法）",
+    "rec": "一句话推荐理由",
+    "principle": "详细原理说明",
+    "scene": "适用场景说明",
+    "steps": ["步骤1", "步骤2", "步骤3"]
+  },
+  "method3": {
+    "title": "方法名称（如：参数代换法）",
+    "rec": "一句话推荐理由",
+    "principle": "详细原理说明",
+    "scene": "适用场景说明",
+    "steps": ["步骤1", "步骤2", "步骤3"]
+  },
+  "knowledge": {
+    "grade": "如：数学 · 八年级上册（人教版第15章）",
+    "chapter": "如：第15章 分式 §15.2 分式的运算",
+    "keypoints": ["核心知识点1", "核心知识点2", "核心知识点3"],
+    "related": ["关联知识点1", "关联知识点2"]
+  },
+  "exam": {
+    "title": "如：初中数学·分式求值考点",
+    "percent": 12,
+    "freq": "★★★★（高频）",
+    "types": "选择题5-6分、填空题5-6分",
+    "score": "约10-12分",
+    "note": "备考建议2-3句话"
+  },
+  "example": {
+    "question": "完整例题题目（与用户输入的题目相同或相近）",
+    "clues": ["切入点线索1：说明如何从题目发现这个方法", "切入点线索2", "切入点线索3"],
+    "steps": [
+      {"action": "第一步具体操作和计算过程", "why": "为什么要这样做的原因", "note": "关键注释或警示"},
+      {"action": "第二步具体操作", "why": "原因", "note": "注释"},
+      {"action": "第三步具体操作", "why": "原因", "note": "注释"}
+    ],
+    "answer": "最终答案：XXX"
+  },
+  "cautions": ["易错点1：描述错误和正确做法", "易错点2", "易错点3"]
+}`;
+
+async function run() {
+  const btn = document.getElementById('btn');
+  showErr('');
+
+  // Build message content
+  let msgContent = [];
+
+  if (currentMode === 'photo') {
+    if (!imageBase64) { showErr('请先拍照或上传题目图片！'); return; }
+    const extra = document.getElementById('q-photo').value.trim();
+    msgContent.push({
+      type: 'image',
+      source: { type: 'base64', media_type: imageMime, data: imageBase64 }
+    });
+    msgContent.push({
+      type: 'text',
+      text: `科目：${getSubject()}｜学段：${getGrade()}\n\n请识别图片中的题目，并按要求分析解答。${extra ? '\n\n补充说明：' + extra : ''}`
+    });
+  } else {
+    const q = document.getElementById('q').value.trim();
+    if (!q) { showErr('请先输入题目！'); return; }
+    msgContent = `科目：${getSubject()}｜学段：${getGrade()}\n\n题目/问题：${q}`;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> AI 分析中，请稍候…';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: SYSTEM,
+        messages: [{ role: 'user', content: msgContent }]
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const raw = data.content.map(b => b.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const d = JSON.parse(clean);
+    render(d);
+
+  } catch(e) {
+    showErr('分析失败：' + e.message);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> 重新分析`;
+}
+
+function renderSteps(containerId, steps) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = (steps||[]).map((s,i) => `
+    <div class="step">
+      <div class="step-num">${i+1}</div>
+      <div class="step-content">${s}</div>
+    </div>`).join('');
+}
+
+function render(d) {
+  ['1','2','3'].forEach(n => {
+    const m = d['method'+n];
+    document.getElementById('t'+n).textContent = m.title;
+    document.getElementById('r'+n).textContent = m.rec;
+    document.getElementById('p'+n).textContent = m.principle;
+    document.getElementById('s'+n).textContent = m.scene;
+    renderSteps('steps'+n, m.steps);
+  });
+
+  document.getElementById('k-grade').innerHTML = `<span class="hl">${d.knowledge.grade}</span>`;
+  document.getElementById('k-chapter').textContent = d.knowledge.chapter;
+  document.getElementById('k-points').innerHTML = (d.knowledge.keypoints||[]).map(k=>`<span class="tag2">${k}</span>`).join('');
+  document.getElementById('k-related').innerHTML = (d.knowledge.related||[]).map(k=>`<span class="tag2">${k}</span>`).join('');
+
+  const ex = d.exam;
+  document.getElementById('e-title').textContent = ex.title;
+  document.getElementById('e-pct').textContent = ex.percent + '%';
+  document.getElementById('e-note').textContent = ex.note;
+  document.getElementById('e-meta').innerHTML = `
+    <div class="exam-chip">考查频率 <span class="val">${ex.freq}</span></div>
+    <div class="exam-chip">题型 <span class="val">${ex.types}</span></div>
+    <div class="exam-chip">分值 <span class="val">${ex.score}</span></div>`;
+  setTimeout(() => { document.getElementById('bar').style.width = Math.min(ex.percent,100)+'%'; }, 250);
+
+  const eg = d.example;
+  document.getElementById('ex-q').textContent = eg.question;
+  document.getElementById('ex-clues').innerHTML = (eg.clues||[]).map(c=>
+    `<div class="clue-item"><div class="clue-icon">▶</div><div>${c}</div></div>`).join('');
+
+  document.getElementById('ex-steps').innerHTML = (eg.steps||[]).map((s,i) => `
+    <div class="step">
+      <div class="step-num gold-num">${i+1}</div>
+      <div class="step-content">
+        <div>${s.action}</div>
+        ${s.why  ? `<div class="step-note">💡 为什么：${s.why}</div>` : ''}
+        ${s.note ? `<div class="step-note">📌 注意：${s.note}</div>` : ''}
+      </div>
+    </div>`).join('');
+  document.getElementById('ex-ans').textContent = eg.answer;
+
+  document.getElementById('cautions').innerHTML = (d.cautions||[]).map(c=>
+    `<div class="caution-item"><div class="caution-dot">⚠</div><div>${c}</div></div>`).join('');
+
+  const ra = document.getElementById('result-area');
+  ra.style.display = 'block';
+  ra.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showErr(msg) {
+  const e = document.getElementById('err');
+  if (!msg) { e.style.display='none'; return; }
+  e.textContent = '⚠ ' + msg;
+  e.style.display = 'block';
+}
+
+document.getElementById('q').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey) run();
+});
+</script>
+</body>
+</html>
